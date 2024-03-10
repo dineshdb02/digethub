@@ -134,7 +134,7 @@ def fetch_videos_details(playlist_datas):
                 "Comment_Author":vid_cmt['items'][ij]['snippet']['topLevelComment']['snippet']['authorDisplayName']  if 'authorDisplayName' in (vid_cmt['items'][ij]['snippet']['topLevelComment']['snippet']).keys() else None,
                 "Comment_PublishedAt": vid_cmt['items'][ij]['snippet']['topLevelComment']['snippet']['publishedAt'] if 'publishedAt' in (vid_cmt['items'][ij]['snippet']['topLevelComment']['snippet']).keys() else None
                }
-              #  print(cmt)
+             
 
       
       video_data.append(
@@ -191,10 +191,7 @@ def channel_table(channel_id):
                                                         )''')
                                                         
     db.commit()
-    
-   
-        
-        
+  
     channel_list=[]
     data=client['dinesh']
     collection=data['you']
@@ -204,30 +201,32 @@ def channel_table(channel_id):
           
     df=pd.DataFrame(channel_list)
     df
+    try:
 
 
-    for index,row in df.iterrows():
-        # print(index, ":", row)
-        insert_query='''insert into channels(channel_name,
-                                            channel_id,
-                                            subscribers,
-                                            channel_views,
-                                            description,
-                                            playlist_id)
-                                            
-                                            values(%s,%s,%s,%s,%s,%s)'''                                    
-        values =(row['channel_name '],
-                row['channel_id'],
-                row['subscribers '],
-                row['channel_views'],
-                row['Description '],
-                row['Playlist_id'])
-        try:
-            access.execute(insert_query,values)
-            db.commit()
-            
-        except:
-            st.success("Channel_Id exists")
+      for index,row in df.iterrows():
+        
+          insert_query='''insert into channels(channel_name,
+                                              channel_id,
+                                              subscribers,
+                                              channel_views,
+                                              description,
+                                              playlist_id)
+                                              
+                                              values(%s,%s,%s,%s,%s,%s)'''                                    
+          values =(row['channel_name '],
+                  row['channel_id'],
+                  row['subscribers '],
+                  row['channel_views'],
+                  row['Description '],
+                  row['Playlist_id'])
+          
+          access.execute(insert_query,values)
+          db.commit()
+              
+    except Exception as e:
+      st.success("Channel_Id exists")
+      db.close()
 
 # playlist table 
 
@@ -236,11 +235,8 @@ def playlist_table(channel_id):
     db=psycopg2.connect(host='localhost',user='postgres',password='11001100',database='dinesh',port=5432)
     access=db.cursor()
 
-    
-   
     db.commit()
 
-   
     access.execute('''create table if not exists playlists(playlist_id varchar(100) primary key,
                                                             title varchar(500),
                                                             channelId varchar(100),
@@ -268,7 +264,7 @@ def playlist_table(channel_id):
       for index,row in df.iterrows():
     
             
-            # print(index, ":", row)
+            
         insert_query='''insert into playlists(playlist_id,
                                                 title,
                                                 channelId,
@@ -283,14 +279,14 @@ def playlist_table(channel_id):
                     row['channel_name'],
                     row['published_at'],
                     row['videocount'])
-            # try:
+            
         access.execute(insert_query,values)
         db.commit()
     except Exception as e:
       st.success("Playlist_Id exists")
       db.close()
  
-        
+     
               
 def video_table(channel_id):
 
@@ -403,7 +399,7 @@ def comments_table(channel_id):
   data=client['dinesh']
   collection=data['you']
   cnt = 0
-  for cmt_details in collection.find({},{"_id":0,"comment_info":1}):
+  for cmt_details in collection.find({'channel_info.channel_id':channel_id},{"_id":0,"comment_info":1}):
       for i in range(len(cmt_details['comment_info'])):
           for j in range(len(cmt_details['comment_info'][i])):
             if 'Comment_Id_'+str(j+1) in cmt_details["comment_info"][i].keys() and comment_list.append(cmt_details["comment_info"][i]['Comment_Id_'+str(j+1)]):
@@ -414,11 +410,11 @@ def comments_table(channel_id):
   df=pd.DataFrame(comment_list)
   df
 
-  # cnt
+ 
 
 
   for index,row in df.iterrows():
-      # print(index, ":", row)
+      
       insert_query='''insert into comments(Comment_Id,
                                           channel_Id,
                                           
@@ -433,12 +429,11 @@ def comments_table(channel_id):
               row['Comment_Text'],
               row['Comment_Author'],
               row['Comment_PublishedAt'])
-  # try:
+ 
       access.execute(insert_query,values)
       db.commit()
           
-  # except:
-  #     print("Already inserted")
+ 
 
 
 # streamlite
@@ -456,7 +451,7 @@ with st.sidebar:
     option = st.selectbox(
     "Select Page",
     ('Collect Data', 'Migrate Data', 'Data Analysing'))
-    # st.success('This is a success message!', icon="✅")
+    
 
     st.write('You selected:', option)
     
@@ -514,34 +509,29 @@ if option == 'Migrate Data':
         
         )
 
-    
-    
     if(len(options) > 0):
       if st.button('Migrate to SQL'):
         if 'Channels' in options:
           channel_table(option['channel_id'])
-          # if option['channel_id'] == 'channel_id':
-          st.success("Channel Inserted Successfully")
+          if option['channel_id'] == 'channel_id':
+            st.success("Channel Inserted Successfully")
             
             
         if 'Playlists' in options:
           playlist_table(option['channel_id'])
           if option['channel_id'] == 'channel_id':
-            
             st.success("Playlists Inserted Successfully")
             
         if 'videos' in options:
           
           video_table(option['channel_id'])
-          # if option['channel_id'] == 'channel_id':
-          st.success("Videos Inserted Successfully")
+          if option['channel_id'] == 'channel_id':
+            st.success("Videos Inserted Successfully")
          
         if 'Comments' in options:
           comments_table(option['channel_id'])
-          # 
-          
           if option['channel_id'] == 'channel_id':
-            st.success("wow")
+            st.success("Comments inserted successfully")
           
           
 
